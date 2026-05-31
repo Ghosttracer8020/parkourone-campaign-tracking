@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) exit;
 
 class POT_GitHub_Updater {
 
-    private $github_repo = 'monkeyspk/parkourone-campaign-tracking';
+    private $github_repo = 'Ghosttracer8020/parkourone-campaign-tracking';
     private $plugin_slug = 'parkourone-campaign-tracking';
     private $check_interval = 3600; // 1 Stunde in Sekunden
     private $transient_key = 'pot_github_update_check';
