@@ -31,5 +31,9 @@ class POT_Plugin {
 
         // Front-end capture tracker enqueue + localize (admin-skipped).
         POT_Tracker::init();
+
+        // Theme-analytics retirement: option-gated dequeue of po-analytics-tracker +
+        // removal of the theme's wp_footer fallback writer (single-tracker cutover).
+        POT_Theme_Retirement::init();
     }
 }
