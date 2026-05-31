@@ -1,0 +1,50 @@
+/* Campaign Tracking dashboard — minimal styling; native wp-admin classes carry the rest. */
+
+/* Date-range control bar: lay the preset, custom dates, button, spinner inline. */
+.pot-control-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 16px;
+}
+
+.pot-control-bar label {
+    margin: 0 2px 0 6px;
+    font-weight: 600;
+}
+
+.pot-control-bar .pot-custom-dates {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Keep the WP spinner inline within the control bar instead of floating right. */
+.pot-control-bar .spinner {
+    float: none;
+    margin: 0 4px;
+}
+
+.pot-range-label {
+    color: #646970;
+    font-style: italic;
+}
+
+/* Impossible-funnel marker (clicks>visits or bookings>clicks) — warning, never hidden. */
+.dashicons-warning.pot-warning {
+    color: #d63638;
+    vertical-align: middle;
+}
+
+/* Health-banner accent — sits above the control bar when conversion tracking is offline. */
+.pot-health-banner {
+    margin: 8px 0 12px;
+}
+
+/* Totals row emphasis. */
+.pot-metrics-table tfoot .pot-totals th,
+.pot-metrics-table tfoot .pot-totals td {
+    font-weight: 700;
+    border-top: 2px solid #c3c4c7;
+}
