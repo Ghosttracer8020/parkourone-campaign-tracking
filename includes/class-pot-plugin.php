@@ -25,5 +25,11 @@ class POT_Plugin {
 
         // Front-end UTM capture enqueue + checkout cookie→order-meta bridge.
         POT_Attribution::init();
+
+        // Client-side ingest REST route (POST pot/v1/event) for visits + CTA clicks.
+        POT_Ingest::init();
+
+        // Front-end capture tracker enqueue + localize (admin-skipped).
+        POT_Tracker::init();
     }
 }
