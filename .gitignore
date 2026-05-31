@@ -1,0 +1,9 @@
+# Reference material — sibling plugins & theme have their own git repos
+Input/
+
+# macOS
+.DS_Store
+
+# Node / build (if added later)
+node_modules/
+vendor/
