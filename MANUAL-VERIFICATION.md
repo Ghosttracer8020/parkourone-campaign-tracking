@@ -54,3 +54,16 @@ Dieses Plugin wurde ohne lokale PHP-/WordPress-Laufzeit gebaut. Der gesamte Code
 - [ ] Nach Cutover: `po-analytics-tracker` (`analytics-tracker.js`) wird **nicht mehr** enqueued **und** `wp_po_analytics_events` bekommt **keine neuen** pageview/cta_click-Zeilen mehr (handle_track/track_basic_pageview ohne Caller) — Plugin ist alleiniger Tracker
 - [ ] Theme-`track_purchase` schreibt **weiterhin** seine Purchase-Zeile (absichtlich nicht entfernt); separate Retirement-Entscheidung erst nach bestätigter Buchungs-Parität
 - [ ] Rollback: `pot_retire_theme_tracker` auf `false` → Theme-Tracker sofort wieder aktiv, ohne Deploy
+
+---
+
+## Phase 4 — Admin Dashboard
+
+- [ ] Dashboard unter dem `parkourone`-Menü öffnen (als `manage_options`-Admin) → Per-Kampagne-Tabelle erscheint für die letzten 30 Tage, inklusive `(unattributed)`-Zeile und Gesamt-/Totals-Zeile (7 Spalten: Kampagne | Visits | Klicks | Buchungen | Conversion-Rate | Visit→Klick | Klick→Buchung)
+- [ ] Presets wechseln (Heute / 7 Tage / 30 Tage / Benutzerdefiniert) → Tabelle re-queried den korrekten UTC-Zeitraum (per AJAX, ohne Full-Reload); bei „Benutzerdefiniert" erscheinen die From/To-Date-Inputs, „Aktualisieren" löst die Abfrage aus
+- [ ] Impossible-Funnel-Daten seeden (z. B. `clicks > visits` für eine Kampagne) → `dashicons-warning`-Marker erscheint in der betroffenen Zelle, die Zeile wird **nicht** ausgeblendet
+- [ ] `ab-webhook-endpoint` deaktivieren (`pot_conversion_status !== 'ok'`) → Health-Banner „Conversion-Tracking ist offline …" erscheint oben auf der Dashboard-Seite
+- [ ] Numerische Parität: für einen bekannten Datumsbereich die Dashboard-Zahlen mit einem manuellen SQL-Aggregat (`SELECT … GROUP BY campaign` mit UTC-Bounds) vergleichen → identisch
+- [ ] AJAX-Refresh funktioniert (Spinner `is-active` während Request, Controls disabled → wieder enabled; leerer Bereich zeigt „Keine Daten im gewählten Zeitraum"; erzwungener Fehler zeigt graceful Inline-Message ohne die Tabelle zu zerstören)
+- [ ] Progressive Enhancement: mit deaktiviertem JavaScript rendert die Seite serverseitig weiterhin korrekt (initiale Tabelle + Banner)
+- [ ] Phase-5-Parität (später): die Dashboard-Totals müssen exakt dem entsprechen, was die Phase-5-Pull-API für denselben Zeitraum zurückgibt (beide lesen über `POT_Store::aggregate_by_campaign`)

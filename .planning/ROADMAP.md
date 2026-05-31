@@ -77,8 +77,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The admin selects a date range via presets (today / 7d / 30d / custom, default 30d) and the table re-queries for that range.
   4. The dashboard loads and refreshes data via AJAX (`wp_ajax_pot_metrics` + nonce + capability check) and surfaces a `not_configured`/`stale` health indicator when conversion tracking is offline.
 **Plans**: 2 plans
-  - [ ] 04-01-PLAN.md — Server-side dashboard: convert POT_Admin placeholder → control bar + health banner + wp-list-table (rate helpers w/ divide-by-zero guards, UTC day-boundary conversion, impossible-funnel warnings) + wp_ajax_pot_metrics handler (nonce + manage_options, rows/totals/health/range) reusing POT_Store::aggregate_by_campaign (DASH-01..04)
-  - [ ] 04-02-PLAN.md — Progressive-enhancement layer: pot-dashboard.js re-queries wp_ajax_pot_metrics on preset/custom-date/Aktualisieren and swaps #pot-metrics-body (loading/empty/error/health states) + minimal pot-dashboard.css (control bar + warning marker) (DASH-03, DASH-04)
+  - [x] 04-01-PLAN.md — Server-side dashboard: convert POT_Admin placeholder → control bar + health banner + wp-list-table (rate helpers w/ divide-by-zero guards, UTC day-boundary conversion, impossible-funnel warnings) + wp_ajax_pot_metrics handler (nonce + manage_options, rows/totals/health/range) reusing POT_Store::aggregate_by_campaign (DASH-01..04)
+  - [x] 04-02-PLAN.md — Progressive-enhancement layer: pot-dashboard.js re-queries wp_ajax_pot_metrics on preset/custom-date/Aktualisieren and swaps #pot-metrics-body (loading/empty/error/health states) + minimal pot-dashboard.css (control bar + warning marker) (DASH-03, DASH-04)
 **UI hint**: yes
 
 ### Phase 5: Secured Pull REST API
