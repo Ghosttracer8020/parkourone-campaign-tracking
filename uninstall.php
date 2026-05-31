@@ -24,6 +24,8 @@ $wpdb->query("DROP TABLE IF EXISTS {$table}");
 delete_option('pot_db_version');
 delete_option('pot_retention_days');
 delete_option('pot_api_secret');
+delete_option('pot_conversion_status');
+delete_option('pot_retire_theme_tracker');
 
 // Clear the scheduled retention cron.
 wp_clear_scheduled_hook('pot_prune_events');
