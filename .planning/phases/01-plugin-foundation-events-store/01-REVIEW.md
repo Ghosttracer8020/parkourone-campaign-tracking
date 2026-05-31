@@ -14,10 +14,13 @@ files_reviewed_list:
   - uninstall.php
 findings:
   critical: 0
-  warning: 1
+  warning: 0
   info: 2
-  total: 3
-status: issues_found
+  total: 2
+status: clean
+fix_iterations: 1
+resolved:
+  - "WR-01: admin menu now registered at admin_menu priority 999 (commit applied)"
 ---
 
 # Phase 1: Code Review Report
@@ -25,7 +28,7 @@ status: issues_found
 **Reviewed:** 2026-05-31
 **Depth:** standard
 **Files Reviewed:** 8
-**Status:** issues_found
+**Status:** clean (WR-01 fixed; 2 by-design info items remain)
 
 > Note: No PHP runtime available in this environment — review is static (read + grep + cross-file reasoning), not `php -l`/execution-based.
 
@@ -42,6 +45,11 @@ No critical issues. One warning (admin-menu attachment ordering) and two info it
 ## Narrative Findings (AI reviewer)
 
 ## Warnings
+
+> **WR-01 RESOLVED** (fix applied this run): `POT_Admin::init()` now hooks
+> `add_menu_page` on `admin_menu` priority 999, so the `parkourone` parent is
+> registered before the parent-exists check runs. Original finding retained below
+> for the record.
 
 ### WR-01: Admin submenu fallback is admin_menu-priority-fragile
 
