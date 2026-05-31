@@ -12,7 +12,7 @@ A single WordPress/WooCommerce plugin that measures a fixed 3-stage marketing fu
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Plugin Foundation & Events Store** - House-style scaffold, HPOS declaration, self-updater, `dbDelta` events table with composite indices, retention cron, uninstall cleanup
+- [x] **Phase 1: Plugin Foundation & Events Store** - House-style scaffold, HPOS declaration, self-updater, `dbDelta` events table with composite indices, retention cron, uninstall cleanup (completed 2026-05-31)
 - [ ] **Phase 2: Conversion & Attribution Bridge** - Consent-independent server-side booking conversion (dual hooks, idempotent, graceful degradation) + first-touch UTM cookie→order-meta bridge — the core value
 - [ ] **Phase 3: Consent-Gated Client Capture & Theme Retirement** - Visit beacon + CTA-click tracking behind consent/admin/bot gates, then hard cutover off the theme analytics tracker with a parity check
 - [ ] **Phase 4: Admin Dashboard** - Per-campaign funnel table (visits/clicks/bookings, conversion rate, drop-off) with date-range presets and AJAX refresh under the `parkourone` menu
@@ -32,8 +32,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The daily retention cron is scheduled and prunes raw visit/click rows older than the retention window (~180 days) while never touching booking rows.
   5. Uninstall removes the events table, all plugin options (including any secret), and clears scheduled cron events; the GitHub self-updater is wired against `monkeyspk/<slug>` with the shared `parkourone_github_token`.
 **Plans**: 2 plans
-  - [ ] 01-01-PLAN.md — Walking skeleton: bootstrap + HPOS, dbDelta pot_events table (3 indices), POT_Store insert/aggregate gateway, placeholder admin page under parkourone (INFRA-01, INFRA-02, INFRA-04)
-  - [ ] 01-02-PLAN.md — Hardening: daily retention cron (prune visit/click only), GitHub self-updater (POT_GitHub_Updater), uninstall cleanup (INFRA-03, INFRA-05)
+  - [x] 01-01-PLAN.md — Walking skeleton: bootstrap + HPOS, dbDelta pot_events table (3 indices), POT_Store insert/aggregate gateway, placeholder admin page under parkourone (INFRA-01, INFRA-02, INFRA-04)
+  - [x] 01-02-PLAN.md — Hardening: daily retention cron (prune visit/click only), GitHub self-updater (POT_GitHub_Updater), uninstall cleanup (INFRA-03, INFRA-05)
 
 ### Phase 2: Conversion & Attribution Bridge
 **Goal**: Every completed Probetraining booking is counted exactly once, server-side and consent-independent, and is attributed back to its originating campaign — the metric that must be correct if all else fails.
@@ -94,7 +94,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Plugin Foundation & Events Store | 0/2 | Planned | - |
+| 1. Plugin Foundation & Events Store | 2/2 | Complete   | 2026-05-31 |
 | 2. Conversion & Attribution Bridge | 0/TBD | Not started | - |
 | 3. Consent-Gated Client Capture & Theme Retirement | 0/TBD | Not started | - |
 | 4. Admin Dashboard | 0/TBD | Not started | - |
