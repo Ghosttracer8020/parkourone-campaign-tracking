@@ -17,7 +17,10 @@ class POT_Admin {
     const MENU_SLUG = 'parkourone-campaign-tracking';
 
     public static function init() {
-        add_action('admin_menu', [__CLASS__, 'add_menu_page']);
+        // Priority 999 so the theme/sibling-owned `parkourone` top-level menu is
+        // registered before our check runs — otherwise the fallback could add a
+        // duplicate standalone page even when the parent exists (WR-01).
+        add_action('admin_menu', [__CLASS__, 'add_menu_page'], 999);
     }
 
     public static function add_menu_page() {
