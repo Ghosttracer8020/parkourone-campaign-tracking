@@ -31,7 +31,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. `POT_Store` can insert a visit/click/booking row and `aggregate_by_campaign($from, $to)` returns per-campaign counts (verified by a manual insert + aggregate).
   4. The daily retention cron is scheduled and prunes raw visit/click rows older than the retention window (~180 days) while never touching booking rows.
   5. Uninstall removes the events table, all plugin options (including any secret), and clears scheduled cron events; the GitHub self-updater is wired against `monkeyspk/<slug>` with the shared `parkourone_github_token`.
-**Plans**: TBD
+**Plans**: 2 plans
+  - [ ] 01-01-PLAN.md — Walking skeleton: bootstrap + HPOS, dbDelta pot_events table (3 indices), POT_Store insert/aggregate gateway, placeholder admin page under parkourone (INFRA-01, INFRA-02, INFRA-04)
+  - [ ] 01-02-PLAN.md — Hardening: daily retention cron (prune visit/click only), GitHub self-updater (POT_GitHub_Updater), uninstall cleanup (INFRA-03, INFRA-05)
 
 ### Phase 2: Conversion & Attribution Bridge
 **Goal**: Every completed Probetraining booking is counted exactly once, server-side and consent-independent, and is attributed back to its originating campaign — the metric that must be correct if all else fails.
@@ -92,7 +94,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Plugin Foundation & Events Store | 0/TBD | Not started | - |
+| 1. Plugin Foundation & Events Store | 0/2 | Planned | - |
 | 2. Conversion & Attribution Bridge | 0/TBD | Not started | - |
 | 3. Consent-Gated Client Capture & Theme Retirement | 0/TBD | Not started | - |
 | 4. Admin Dashboard | 0/TBD | Not started | - |
