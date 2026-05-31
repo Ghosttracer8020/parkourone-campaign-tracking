@@ -13,10 +13,10 @@ A single WordPress/WooCommerce plugin that measures a fixed 3-stage marketing fu
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Plugin Foundation & Events Store** - House-style scaffold, HPOS declaration, self-updater, `dbDelta` events table with composite indices, retention cron, uninstall cleanup (completed 2026-05-31)
-- [ ] **Phase 2: Conversion & Attribution Bridge** - Consent-independent server-side booking conversion (dual hooks, idempotent, graceful degradation) + first-touch UTM cookie→order-meta bridge — the core value
-- [ ] **Phase 3: Consent-Gated Client Capture & Theme Retirement** - Visit beacon + CTA-click tracking behind consent/admin/bot gates, then hard cutover off the theme analytics tracker with a parity check
-- [ ] **Phase 4: Admin Dashboard** - Per-campaign funnel table (visits/clicks/bookings, conversion rate, drop-off) with date-range presets and AJAX refresh under the `parkourone` menu
-- [ ] **Phase 5: Secured Pull REST API** - Bearer + `hash_equals` authenticated `GET /metrics` returning the same aggregates as camelCase + `generatedAt`, with a managed secret option
+- [x] **Phase 2: Conversion & Attribution Bridge** - Consent-independent server-side booking conversion (dual hooks, idempotent, graceful degradation) + first-touch UTM cookie→order-meta bridge — the core value
+- [x] **Phase 3: Consent-Gated Client Capture & Theme Retirement** - Visit beacon + CTA-click tracking behind consent/admin/bot gates, then hard cutover off the theme analytics tracker with a parity check
+- [x] **Phase 4: Admin Dashboard** - Per-campaign funnel table (visits/clicks/bookings, conversion rate, drop-off) with date-range presets and AJAX refresh under the `parkourone` menu
+- [x] **Phase 5: Secured Pull REST API** - Bearer + `hash_equals` authenticated `GET /metrics` returning the same aggregates as camelCase + `generatedAt`, with a managed secret option
 
 ## Phase Details
 
@@ -103,7 +103,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Plugin Foundation & Events Store | 2/2 | Complete   | 2026-05-31 |
-| 2. Conversion & Attribution Bridge | 0/2 | Planned | - |
-| 3. Consent-Gated Client Capture & Theme Retirement | 0/2 | Planned | - |
-| 4. Admin Dashboard | 0/2 | Planned | - |
-| 5. Secured Pull REST API | 0/2 | Planned | - |
+| 2. Conversion & Attribution Bridge | 2/2 | Complete | 2026-05-31 |
+| 3. Consent-Gated Client Capture & Theme Retirement | 2/2 | Complete | 2026-05-31 |
+| 4. Admin Dashboard | 2/2 | Complete | 2026-05-31 |
+| 5. Secured Pull REST API | 2/2 | Complete | 2026-05-31 |

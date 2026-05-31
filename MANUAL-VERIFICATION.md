@@ -67,3 +67,47 @@ Dieses Plugin wurde ohne lokale PHP-/WordPress-Laufzeit gebaut. Der gesamte Code
 - [ ] AJAX-Refresh funktioniert (Spinner `is-active` während Request, Controls disabled → wieder enabled; leerer Bereich zeigt „Keine Daten im gewählten Zeitraum"; erzwungener Fehler zeigt graceful Inline-Message ohne die Tabelle zu zerstören)
 - [ ] Progressive Enhancement: mit deaktiviertem JavaScript rendert die Seite serverseitig weiterhin korrekt (initiale Tabelle + Banner)
 - [ ] Phase-5-Parität (später): die Dashboard-Totals müssen exakt dem entsprechen, was die Phase-5-Pull-API für denselben Zeitraum zurückgibt (beide lesen über `POT_Store::aggregate_by_campaign`)
+
+---
+
+## Phase 5 — Secured Pull REST API
+
+**Endpoint:** `GET https://berlin.parkourone.com/wp-json/pot/v1/metrics?from=YYYY-MM-DD&to=YYYY-MM-DD`
+**Auth:** `Authorization: Bearer <pot_api_secret>` (Secret aus wp-admin → `parkourone` → „API / Statusboard").
+
+### curl-Beispiel
+```bash
+curl -s -H "Authorization: Bearer DEIN_SECRET" \
+  "https://berlin.parkourone.com/wp-json/pot/v1/metrics?from=2026-05-01&to=2026-05-31" | jq .
+```
+
+### Erwartete Payload-Form (camelCase, .passthrough()-kompatibel)
+```json
+{
+  "generatedAt": "2026-05-31T12:00:00+00:00",
+  "status": "ok",
+  "range": { "from": "2026-05-01", "to": "2026-05-31", "timezone": "UTC" },
+  "totals": { "visits": 0, "clicks": 0, "bookings": 0, "conversionRate": null },
+  "campaigns": [
+    { "campaign": "spring", "visits": 120, "clicks": 30, "bookings": 6,
+      "conversionRate": 5.0, "visitToClick": 25.0, "clickToBooking": 20.0 },
+    { "campaign": "(unattributed)", "visits": 40, "clicks": 5, "bookings": 1,
+      "conversionRate": 2.5, "visitToClick": 12.5, "clickToBooking": 20.0 }
+  ]
+}
+```
+> Raten sind Prozent auf 1 Dezimale; `null`, wenn der Nenner 0 ist. `status` = `ok` | `not_configured` | `stale` (aus `pot_conversion_status`).
+
+### Checks
+- [ ] Gültiger Bearer → HTTP 200 + Payload; die Zahlen sind **identisch** zu den Dashboard-Zahlen für denselben Zeitraum (beide via `POT_Store::aggregate_by_campaign` + `POT_Metrics`)
+- [ ] **Fehlender** `Authorization`-Header → HTTP **401** (nicht 500), generische Meldung
+- [ ] **Falsches** Secret → HTTP **401** (nicht 500); kein Hinweis, ob ein Secret existiert
+- [ ] Secret in wp-admin neu generieren → alter Bearer liefert **401**, neuer liefert 200 (Statusboard-Empfänger muss neues Secret bekommen)
+- [ ] Secret-Rotation ist nur als `manage_options` + mit gültiger Nonce möglich (CSRF-Schutz)
+- [ ] Settings-Seite „API / Statusboard" zeigt Endpoint-URL + **maskiertes** Secret (Anzeigen/Kopieren-Button)
+- [ ] `?from`/`?to` weglassen → Default = letzte 30 Tage (UTC); ungültige/zukünftige Daten werden geklemmt; Span > 366 Tage wird gekappt
+- [ ] Secret taucht **nicht** in Logs auf; Antwort sendet **kein** `Access-Control-Allow-Origin`
+- [ ] `wp plugin uninstall parkourone-campaign-tracking` → `pot_api_secret`-Option ist entfernt
+
+### Handoff für die Statusboard-Session
+Der Empfänger (separates Projekt `one-statusboard`, Next.js/Vercel) ruft den obigen Endpoint per Cron mit dem Bearer-Secret ab und speichert die Payload (Snapshot-Modell, `.passthrough()`). Secret = der Wert von der WP-Settings-Seite.
