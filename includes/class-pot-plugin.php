@@ -13,7 +13,9 @@ class POT_Plugin {
         // Schema version-bump guard: re-runs dbDelta on admin_init when pot_db_version differs.
         add_action('admin_init', ['POT_Activator', 'maybe_upgrade']);
 
-        // Retention cron handler binding is wired here in Plan 02 (POT_Cron::init()).
+        // Retention cron handler binding (the action must be registered on every load
+        // so WP-Cron can fire it).
+        POT_Cron::init();
 
         // Admin shell (placeholder page under the parkourone menu).
         POT_Admin::init();

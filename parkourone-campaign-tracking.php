@@ -20,13 +20,13 @@ define('POT_PLUGIN_FILE', __FILE__);
 define('POT_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('POT_PLUGIN_URL', plugin_dir_url(__FILE__));
 
-// 1) Flat require_once chain (house style).
+// 1) Flat require_once chain (house style). github-updater.php is ALWAYS the last require.
 require_once POT_PLUGIN_DIR . 'includes/class-pot-plugin.php';
 require_once POT_PLUGIN_DIR . 'includes/class-pot-activator.php';
 require_once POT_PLUGIN_DIR . 'includes/class-pot-store.php';
+require_once POT_PLUGIN_DIR . 'includes/class-pot-cron.php';
 require_once POT_PLUGIN_DIR . 'includes/class-pot-admin.php';
-// NOTE: includes/github-updater.php is added LAST in Plan 02 (house style: updater is
-// always the final require). includes/class-pot-cron.php is also added in Plan 02.
+require_once POT_PLUGIN_DIR . 'includes/github-updater.php'; // ALWAYS last in the require chain.
 
 // 2) Main initialisation: single pot_init() on plugins_loaded, priority 11
 //    (after ab-webhook-endpoint registers the probetraining status — harmless now, required later).
@@ -43,6 +43,6 @@ add_action('before_woocommerce_init', function () {
     }
 });
 
-// 4) Activation hook. No flush_rewrite_rules — no rewrite rules in this phase.
-//    The deactivation hook (clearing the retention cron) is wired in Plan 02.
+// 4) Activation / deactivation hooks. No flush_rewrite_rules — no rewrite rules in this phase.
 register_activation_hook(POT_PLUGIN_FILE, ['POT_Activator', 'activate']);
+register_deactivation_hook(POT_PLUGIN_FILE, ['POT_Cron', 'clear']);

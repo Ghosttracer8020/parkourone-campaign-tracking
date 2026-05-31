@@ -27,8 +27,8 @@ class POT_Activator {
             add_option('pot_retention_days', 180, '', false);
         }
 
-        // The daily retention cron is scheduled from this activation path in Plan 02
-        // (POT_Cron::schedule()).
+        // Schedule the daily retention cron (idempotent).
+        POT_Cron::schedule();
     }
 
     /**
