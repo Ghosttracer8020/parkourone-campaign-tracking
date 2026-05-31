@@ -31,6 +31,9 @@ require_once POT_PLUGIN_DIR . 'includes/class-pot-attribution.php';
 require_once POT_PLUGIN_DIR . 'includes/class-pot-ingest.php';
 require_once POT_PLUGIN_DIR . 'includes/class-pot-tracker.php';
 require_once POT_PLUGIN_DIR . 'includes/class-pot-theme-retirement.php';
+require_once POT_PLUGIN_DIR . 'includes/class-pot-metrics.php';
+require_once POT_PLUGIN_DIR . 'includes/class-pot-api.php';
+require_once POT_PLUGIN_DIR . 'includes/class-pot-api-settings.php';
 require_once POT_PLUGIN_DIR . 'includes/github-updater.php'; // ALWAYS last in the require chain.
 
 // 2) Main initialisation: single pot_init() on plugins_loaded, priority 11

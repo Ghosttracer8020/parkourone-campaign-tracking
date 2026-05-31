@@ -23,6 +23,7 @@ $wpdb->query("DROP TABLE IF EXISTS {$table}");
 // MUST be added to this list so uninstall leaves no orphaned data.
 delete_option('pot_db_version');
 delete_option('pot_retention_days');
+delete_option('pot_api_secret');
 
 // Clear the scheduled retention cron.
 wp_clear_scheduled_hook('pot_prune_events');

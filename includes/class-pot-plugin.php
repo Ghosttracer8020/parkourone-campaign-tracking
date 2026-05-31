@@ -35,5 +35,11 @@ class POT_Plugin {
         // Theme-analytics retirement: option-gated dequeue of po-analytics-tracker +
         // removal of the theme's wp_footer fallback writer (single-tracker cutover).
         POT_Theme_Retirement::init();
+
+        // Secured read-only pull API (GET pot/v1/metrics, Bearer-gated).
+        POT_Api::init();
+
+        // API secret settings page (view endpoint + masked secret, gated regenerate).
+        POT_Api_Settings::init();
     }
 }

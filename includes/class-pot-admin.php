@@ -103,15 +103,20 @@ class POT_Admin {
      * Percentage with a divide-by-zero guard. Returns '–' when the denominator is 0,
      * else number_format_i18n(pct, 1) . ' %' (German locale per house style).
      *
+     * Delegates the numeric computation to POT_Metrics::rate_value() — the SINGLE rate
+     * source shared with POT_Api so dashboard and API numbers cannot drift. This method
+     * only formats the result into the German display string (no behavioral change).
+     *
      * @param int|float $num Numerator (e.g. bookings).
      * @param int|float $den Denominator (e.g. visits).
      * @return string
      */
     private static function rate($num, $den) {
-        if ((int) $den === 0) {
+        $value = POT_Metrics::rate_value($num, $den);
+        if ($value === null) {
             return '–';
         }
-        return number_format_i18n(($num / $den) * 100, 1) . ' %';
+        return number_format_i18n($value, 1) . ' %';
     }
 
     /**
