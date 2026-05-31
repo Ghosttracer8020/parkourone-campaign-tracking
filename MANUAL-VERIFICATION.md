@@ -35,3 +35,22 @@ Dieses Plugin wurde ohne lokale PHP-/WordPress-Laufzeit gebaut. Der gesamte Code
 - [ ] Als eingeloggter Admin → `pot-attribution.js` wird **nicht** enqueued (View Source / Network)
 - [ ] Bestellung **ohne** UTM/Cookie → keine `_pot_*`-Order-Meta → booking landet im `(unattributed)`-Bucket in `aggregate_by_campaign`, wird nie verworfen
 - [ ] Manipuliertes (Nicht-JSON) `pot_attribution`-Cookie → Checkout → kein Fatal, keine Attribution-Meta geschrieben
+
+---
+
+## Phase 3 — Client Capture & Theme Retirement
+
+### Client Capture (Plan 03-01)
+
+- [ ] Visit-Beacon feuert **genau einmal pro Pageview** — auch auf einer voll gecachten Seite (DevTools → Network: ein `POST /wp-json/pot/v1/event` mit `type:visit`)
+- [ ] CTA-Klick auf `/probetraining-buchen` wird **genau einmal** erfasst; schneller Doppelklick wird debounced (~500ms, kein zweiter `type:click`-Beacon)
+- [ ] Consent OFF → **kein** Beacon und **kein** `pot_sid` in sessionStorage (DevTools → Network + Application)
+- [ ] Eingeloggter Admin (`manage_options`) → Tracker wird **nicht** enqueued (View Source) **und** REST-Route lehnt ab (Handler gibt 204, keine Zeile in `wp_pot_events`)
+- [ ] Bekannter Bot-UA → server-seitige Denylist lehnt ab (204), **keine IP** gespeichert; `navigator.webdriver` → Client-Early-Return
+
+### Theme-Retirement / Cutover (Plan 03-02)
+
+- [ ] **Parität (MIGRATE-02):** Plugin + Theme-Tracker im Shadow-Window parallel laufen lassen → Plugin-Visit/Click-Counts mit den Theme-Counts in `wp_po_analytics_events` für denselben Zeitraum vergleichen, **bevor** `pot_retire_theme_tracker` live geflippt wird (keine Lücke)
+- [ ] Nach Cutover: `po-analytics-tracker` (`analytics-tracker.js`) wird **nicht mehr** enqueued **und** `wp_po_analytics_events` bekommt **keine neuen** pageview/cta_click-Zeilen mehr (handle_track/track_basic_pageview ohne Caller) — Plugin ist alleiniger Tracker
+- [ ] Theme-`track_purchase` schreibt **weiterhin** seine Purchase-Zeile (absichtlich nicht entfernt); separate Retirement-Entscheidung erst nach bestätigter Buchungs-Parität
+- [ ] Rollback: `pot_retire_theme_tracker` auf `false` → Theme-Tracker sofort wieder aktiv, ohne Deploy
