@@ -7,3 +7,6 @@ Input/
 # Node / build (if added later)
 node_modules/
 vendor/
+
+# SHA file written by the GitHub self-updater
+.git-version
