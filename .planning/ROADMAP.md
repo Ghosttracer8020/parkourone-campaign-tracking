@@ -62,8 +62,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. After cutover, the theme's `analytics-tracker.js` no longer emits `cta_click`/`pageview` and `wp_po_analytics_events` stops receiving new tracking rows — the new plugin is the sole tracker.
   5. A parity check confirms the new plugin's visit/click counts match the theme tracker's for the same shadow window before cutover, so no tracking gap is introduced.
 **Plans**: 2 plans
-  - [ ] 03-01-PLAN.md — Capture vertical slice: POST pot/v1/event ingest route (nonce gate, sanitizing handler, write-through), consent/admin/bot-gated pot-tracker.js (visit beacon + capture-phase CTA click listener), admin-skipped enqueue + wiring (CAPTURE-01..05)
-  - [ ] 03-02-PLAN.md — Theme retirement: option-gated POT_Theme_Retirement dequeues po-analytics-tracker (priority 99) + removes wp_footer track_basic_pageview on the PO_Analytics singleton; parity check deferred to manual staging checklist (MIGRATE-01, MIGRATE-02)
+  - [x] 03-01-PLAN.md — Capture vertical slice: POST pot/v1/event ingest route (nonce gate, sanitizing handler, write-through), consent/admin/bot-gated pot-tracker.js (visit beacon + capture-phase CTA click listener), admin-skipped enqueue + wiring (CAPTURE-01..05)
+  - [x] 03-02-PLAN.md — Theme retirement: option-gated POT_Theme_Retirement dequeues po-analytics-tracker (priority 99) + removes wp_footer track_basic_pageview on the PO_Analytics singleton; parity check deferred to manual staging checklist (MIGRATE-01, MIGRATE-02)
 **UI hint**: yes
 
 ### Phase 4: Admin Dashboard
