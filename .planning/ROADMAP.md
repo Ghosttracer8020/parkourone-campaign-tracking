@@ -46,7 +46,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. When `ab-webhook-endpoint` is inactive (status unavailable), the plugin degrades gracefully (no fatal), shows an admin notice, and records a `not_configured` state instead of silently logging zero.
   4. A booking that originated from a UTM campaign is attributed to that campaign via first-touch UTM persisted from cookie to order meta at checkout, with the cookie written only after `po_has_consent('analytics')` (UTM held in JS memory until then).
   5. A booking with no first-touch UTM is recorded under a named `(unattributed)` / `(direct)` bucket — never dropped and never silently merged into a real campaign; visits, clicks, and bookings group by the first-touch campaign value.
-**Plans**: TBD
+**Plans**: 2 plans
+  - [ ] 02-01-PLAN.md — Conversion listener: dual-hook (probetraining + status_changed fallback) POT_Conversion::record_conversion, idempotency flag before insert, graceful degradation + not_configured notice, booking write through POT_Store (CONVERT-01..04, ATTRIB-03/04)
+  - [ ] 02-02-PLAN.md — Attribution bridge: first-touch UTM capture pot-attribution.js (consent-gated sessionStorage→cookie), POT_Attribution checkout cookie→order-meta persistence + admin-skip enqueue (ATTRIB-01, ATTRIB-02, ATTRIB-03)
 
 ### Phase 3: Consent-Gated Client Capture & Theme Retirement
 **Goal**: Visits and CTA clicks are captured client-side behind consent, admin, and bot gates, and the legacy theme analytics tracker is retired in the same phase so exactly one tracker runs with no gap and no double-count.
@@ -95,7 +97,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Plugin Foundation & Events Store | 2/2 | Complete   | 2026-05-31 |
-| 2. Conversion & Attribution Bridge | 0/TBD | Not started | - |
+| 2. Conversion & Attribution Bridge | 0/2 | Planned | - |
 | 3. Consent-Gated Client Capture & Theme Retirement | 0/TBD | Not started | - |
 | 4. Admin Dashboard | 0/TBD | Not started | - |
 | 5. Secured Pull REST API | 0/TBD | Not started | - |
