@@ -19,5 +19,11 @@ class POT_Plugin {
 
         // Admin shell (placeholder page under the parkourone menu).
         POT_Admin::init();
+
+        // Server-side conversion listener (WooCommerce-guarded internally; consent-independent).
+        POT_Conversion::init();
+
+        // Front-end UTM capture enqueue + checkout cookie→order-meta bridge.
+        POT_Attribution::init();
     }
 }

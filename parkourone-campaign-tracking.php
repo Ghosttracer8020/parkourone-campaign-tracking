@@ -26,6 +26,8 @@ require_once POT_PLUGIN_DIR . 'includes/class-pot-activator.php';
 require_once POT_PLUGIN_DIR . 'includes/class-pot-store.php';
 require_once POT_PLUGIN_DIR . 'includes/class-pot-cron.php';
 require_once POT_PLUGIN_DIR . 'includes/class-pot-admin.php';
+require_once POT_PLUGIN_DIR . 'includes/class-pot-conversion.php';
+require_once POT_PLUGIN_DIR . 'includes/class-pot-attribution.php';
 require_once POT_PLUGIN_DIR . 'includes/github-updater.php'; // ALWAYS last in the require chain.
 
 // 2) Main initialisation: single pot_init() on plugins_loaded, priority 11
