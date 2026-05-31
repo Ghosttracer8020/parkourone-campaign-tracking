@@ -10,3 +10,9 @@ vendor/
 
 # SHA file written by the GitHub self-updater
 .git-version
+
+# GSD planning + internal workspace docs — kept local only, NOT part of the
+# distributed plugin (the updater deploys the whole repo into the plugin folder).
+.planning/
+CONTEXT-FINDINGS.md
+MANUAL-VERIFICATION.md
