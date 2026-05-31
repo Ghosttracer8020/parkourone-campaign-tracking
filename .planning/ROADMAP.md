@@ -91,7 +91,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. A request with a missing or wrong bearer secret returns 401 (never 500), with the secret compared via `hash_equals` after a length check and never logged; no permissive CORS is sent.
   3. The payload uses camelCase fields and includes a `generatedAt` ISO-8601 timestamp plus a `status` field (`ok`/`stale`/`not_configured`), Statusboard `.passthrough()`-compatible.
   4. The bearer secret lives in a dedicated `autoload=false` option, generated via `wp_generate_password` on activation, and is viewable / regeneratable from the settings page.
-**Plans**: TBD
+**Plans**: 2 plans
+  - [ ] 05-01-PLAN.md — Secured pull slice: extract shared POT_Metrics::rate_value (refactor dashboard onto it), POT_Api Bearer+hash_equals permission_callback, GET pot/v1/metrics returning camelCase payload from POT_Store (zero-drift, no $wpdb), autoload=false secret accessor, orchestrator wiring (API-01, API-02, API-03)
+  - [ ] 05-02-PLAN.md — Managed secret UI: POT_Api_Settings page under parkourone (endpoint URL + masked secret) with nonce+cap-gated regenerate, uninstall deletes pot_api_secret (API-04)
 
 ## Progress
 
@@ -104,4 +106,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Conversion & Attribution Bridge | 0/2 | Planned | - |
 | 3. Consent-Gated Client Capture & Theme Retirement | 0/2 | Planned | - |
 | 4. Admin Dashboard | 0/2 | Planned | - |
-| 5. Secured Pull REST API | 0/TBD | Not started | - |
+| 5. Secured Pull REST API | 0/2 | Planned | - |
