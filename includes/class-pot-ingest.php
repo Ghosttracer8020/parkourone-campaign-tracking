@@ -90,17 +90,33 @@ class POT_Ingest {
             return new WP_REST_Response(null, 204);
         }
 
-        // (3) Sanitize + length-cap every field at the boundary, then write through the gateway.
+        // (3) LP-03 hard allowlist gate. The client landing_path is UNTRUSTED, so it is
+        //     normalized server-side through the single shared primitive and matched against
+        //     the registered allowlist (object-cached, autoload=false option — no per-event DB
+        //     query). A non-listed key is hard-dropped before insert; an EMPTY allowlist yields
+        //     an empty $allowed so EVERY visit/click is dropped. A drop still returns 204 to
+        //     match the admin/bot guard contract (fire-and-forget beacon). This gate NEVER sees
+        //     a `booking` — bookings route through POT_Conversion, never this handler (LP-04).
+        $key     = POT_Landing_Pages::normalize_path((string) $request->get_param('landing_path'));
+        $entries = get_option('pot_landing_pages', []);
+        $allowed = is_array($entries) ? wp_list_pluck($entries, 'key') : [];
+        if (!in_array($key, $allowed, true)) {
+            return new WP_REST_Response(null, 204);
+        }
+
+        // (4) Sanitize + length-cap every field at the boundary, then write through the gateway.
+        //     landing_path stores the canonical normalized $key (D-07) so the per-landing-page
+        //     aggregation is a simple indexed WHERE landing_path IN (...).
         POT_Store::insert_event([
             'event_type'   => sanitize_text_field((string) $request->get_param('type')),
             'campaign'     => substr(sanitize_text_field((string) $request->get_param('campaign')), 0, self::FIELD_MAX),
             'source'       => substr(sanitize_text_field((string) $request->get_param('source')), 0, self::FIELD_MAX),
             'medium'       => substr(sanitize_text_field((string) $request->get_param('medium')), 0, self::FIELD_MAX),
-            'landing_path' => substr(esc_url_raw((string) $request->get_param('landing_path')), 0, self::PATH_MAX),
+            'landing_path' => $key,
             'session_id'   => substr(preg_replace('/[^a-z0-9]/i', '', (string) $request->get_param('session_id')), 0, self::SESSION_MAX),
         ]);
 
-        // (4) Fire-and-forget: no body needed by the beacon client.
+        // (5) Fire-and-forget: no body needed by the beacon client.
         return new WP_REST_Response(null, 204);
     }
 }
