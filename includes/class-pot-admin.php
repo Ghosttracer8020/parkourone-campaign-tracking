@@ -310,43 +310,41 @@ class POT_Admin {
     }
 
     /**
-     * Build the <tbody> rows for the per-campaign table from gateway rows.
-     * Sorted by bookings desc, then visits desc. Every cell escaped. Impossible-funnel
-     * cells (clicks>visits OR bookings>clicks) carry a dashicons-warning marker; the row
-     * is never hidden. Returns an empty-state row when there is no data.
+     * Build the <tbody> rows for the per-landing-page table from zero-filled rows.
+     * Rows arrive in registered (admin-listed) order — NO performance sort (D-02). The first
+     * cell is a two-line label + muted-path cell (D-01); when an entry has no label only the
+     * path is shown. Every cell is escaped. Impossible-funnel cells (clicks>visits OR
+     * bookings>clicks) carry a dashicons-warning marker; the row is never hidden.
      *
-     * @param array<int,array<string,mixed>> $rows Gateway rows {campaign,visits,clicks,bookings}.
+     * An empty input means NO landing pages are registered (zero-fill always emits a row per
+     * listed page), so the empty branch renders the distinct empty-ALLOWLIST state — "register
+     * pages", NOT "no data in range".
+     *
+     * @param array<int,array{key:string,label:string,visits:int,clicks:int,bookings:int}> $rows
      * @return string Escaped <tr>… markup.
      */
     private static function render_rows($rows) {
         if (empty($rows)) {
+            // Distinct empty-allowlist state (LP-06): no pages registered, not "no data in range".
             return '<tr><td colspan="' . self::COL_COUNT . '">'
-                . esc_html('Keine Daten im gewählten Zeitraum')
+                . esc_html('Keine Landingpages registriert — bitte unter Einstellungen → Landingpages anlegen.')
                 . '</td></tr>';
         }
 
-        // Normalize counts to ints.
-        foreach ($rows as &$r) {
-            $r['visits']   = isset($r['visits']) ? (int) $r['visits'] : 0;
-            $r['clicks']   = isset($r['clicks']) ? (int) $r['clicks'] : 0;
-            $r['bookings'] = isset($r['bookings']) ? (int) $r['bookings'] : 0;
-        }
-        unset($r);
-
-        // Default sort: bookings desc, then visits desc.
-        usort($rows, function ($a, $b) {
-            if ($a['bookings'] !== $b['bookings']) {
-                return $b['bookings'] <=> $a['bookings'];
-            }
-            return $b['visits'] <=> $a['visits'];
-        });
-
         $output = '';
         foreach ($rows as $row) {
-            $campaign = isset($row['campaign']) ? (string) $row['campaign'] : POT_Store::UNATTRIBUTED;
-            $visits   = $row['visits'];
-            $clicks   = $row['clicks'];
-            $bookings = $row['bookings'];
+            $key      = isset($row['key']) ? (string) $row['key'] : '';
+            $label    = isset($row['label']) ? (string) $row['label'] : '';
+            $visits   = isset($row['visits']) ? (int) $row['visits'] : 0;
+            $clicks   = isset($row['clicks']) ? (int) $row['clicks'] : 0;
+            $bookings = isset($row['bookings']) ? (int) $row['bookings'] : 0;
+
+            // Two-line label+path cell (D-01): escape EACH piece, then concatenate. The
+            // assembled HTML is passed as %s WITHOUT re-escaping — re-escaping would render
+            // the <br>/<span> as literal text (RESEARCH Anti-Pattern). Path-only when no label.
+            $first = ($label !== '')
+                ? esc_html($label) . '<br><span class="pot-lp-path description">' . esc_html($key) . '</span>'
+                : esc_html($key);
 
             // Impossible-funnel markers (do NOT hide the row).
             $visit_click_warn = ($clicks > $visits)
@@ -366,7 +364,7 @@ class POT_Admin {
                 . '<td>%s%s</td>'
                 . '<td>%s%s</td>'
                 . '</tr>',
-                esc_html($campaign),
+                $first,                                       // already-escaped pieces — NOT re-escaped
                 esc_html(number_format_i18n($visits)),
                 esc_html(number_format_i18n($clicks)),
                 esc_html(number_format_i18n($bookings)),
@@ -508,7 +506,7 @@ class POT_Admin {
             <table class="wp-list-table widefat fixed striped pot-metrics-table">
                 <thead>
                     <tr>
-                        <th scope="col"><?php echo esc_html('Kampagne'); ?></th>
+                        <th scope="col"><?php echo esc_html('Landingpage'); ?></th>
                         <th scope="col"><?php echo esc_html('Visits'); ?></th>
                         <th scope="col"><?php echo esc_html('Klicks'); ?></th>
                         <th scope="col"><?php echo esc_html('Buchungen'); ?></th>
