@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * POT_Admin — the per-campaign funnel dashboard under the theme-owned `parkourone`
+ * POT_Admin — the per-landing-page funnel dashboard under the theme-owned `parkourone`
  * top-level menu.
  *
  * Mirrors class-ab-customer-overview.php (submenu under parkourone, cap manage_options,
@@ -12,10 +12,11 @@ if (!defined('ABSPATH')) {
  * borrows the wp_send_json_* envelope from class-ab-gutschein-settings.php. The fallback
  * top-level page (theme inactive) is a deliberate improvement over the analog.
  *
- * CONTRACT: ALL aggregation lives in POT_Store::aggregate_by_campaign so the dashboard and
- * the Phase 5 pull-API return identical numbers (zero drift). This class contains NO SQL and
- * never touches $wpdb. The local-day→UTC conversion is the CALLER's job (here), not the
- * gateway's — the gateway expects already-UTC 'Y-m-d H:i:s' bounds.
+ * CONTRACT: ALL aggregation lives in POT_Store (here: aggregate_by_landing_page, scoped to
+ * the registered pot_landing_pages allowlist). This class contains NO SQL and never touches
+ * $wpdb. The local-day→UTC conversion is the CALLER's job (here), not the gateway's — the
+ * gateway expects already-UTC 'Y-m-d H:i:s' bounds. The Phase 5 pull-API (POT_Api) stays on
+ * the per-campaign aggregation and is intentionally NOT touched by this dashboard (LP-07).
  */
 class POT_Admin {
 
@@ -261,6 +262,54 @@ class POT_Admin {
     // ---------------------------------------------------------------------
 
     /**
+     * Build the per-landing-page data set for the given UTC window.
+     *
+     * Reads the registered allowlist (pot_landing_pages, autoload=false), asks the gateway
+     * for the listed-only aggregate, then PHP-zero-fills one row per registered page IN
+     * REGISTERED ORDER (D-02) so every listed page shows a row even with zero activity
+     * (D-09). No `(unattributed)` bucket. NO SQL here — all aggregation stays in POT_Store.
+     *
+     * Returns [] when no pages are registered (render_rows then shows the empty-allowlist
+     * state). Byte-identical source for render_page() and ajax_metrics().
+     *
+     * @param string $from_utc UTC 'Y-m-d H:i:s' lower bound.
+     * @param string $to_utc   UTC 'Y-m-d H:i:s' upper bound.
+     * @return array<int,array{key:string,label:string,visits:int,clicks:int,bookings:int}>
+     */
+    private static function landing_page_rows($from_utc, $to_utc) {
+        $entries = get_option('pot_landing_pages', []);
+        $entries = is_array($entries) ? $entries : [];
+        $keys    = wp_list_pluck($entries, 'key');
+
+        $raw = POT_Store::aggregate_by_landing_page($keys, $from_utc, $to_utc);
+
+        // Index gateway rows by their canonical landing_path key.
+        $by_key = [];
+        foreach ($raw as $r) {
+            if (isset($r['landing_path'])) {
+                $by_key[(string) $r['landing_path']] = $r;
+            }
+        }
+
+        // Zero-fill one row per registered page, in registered order (D-02/D-09).
+        $data = [];
+        foreach ($entries as $e) {
+            $key   = isset($e['key']) ? (string) $e['key'] : '';
+            $label = isset($e['label']) ? (string) $e['label'] : '';
+            $hit   = $by_key[$key] ?? [];
+            $data[] = [
+                'key'      => $key,
+                'label'    => $label,
+                'visits'   => (int) ($hit['visits']   ?? 0),
+                'clicks'   => (int) ($hit['clicks']   ?? 0),
+                'bookings' => (int) ($hit['bookings'] ?? 0),
+            ];
+        }
+
+        return $data;
+    }
+
+    /**
      * Build the <tbody> rows for the per-campaign table from gateway rows.
      * Sorted by bookings desc, then visits desc. Every cell escaped. Impossible-funnel
      * cells (clicks>visits OR bookings>clicks) carry a dashicons-warning marker; the row
@@ -411,8 +460,9 @@ class POT_Admin {
         $clean = self::sanitize_range_input($preset_raw, $from_raw, $to_raw);
         $range = self::resolve_range($clean['preset'], $clean['from'], $clean['to']);
 
-        // Single gateway aggregate call (UTC bounds). NO SQL here.
-        $data = POT_Store::aggregate_by_campaign($range['from_utc'], $range['to_utc']);
+        // Per-landing-page data: aggregate the listed keys, then zero-fill in registered
+        // order so every listed page has a row even with no activity (LP-06, D-02/D-09).
+        $data = self::landing_page_rows($range['from_utc'], $range['to_utc']);
 
         $rows_html   = self::render_rows($data);
         $totals_html = self::render_totals($data);
@@ -499,8 +549,9 @@ class POT_Admin {
         $clean = self::sanitize_range_input($preset_raw, $from_raw, $to_raw);
         $range = self::resolve_range($clean['preset'], $clean['from'], $clean['to']);
 
-        // Single gateway aggregate call (UTC bounds) — same path as render_page().
-        $data = POT_Store::aggregate_by_campaign($range['from_utc'], $range['to_utc']);
+        // Per-landing-page data — IDENTICAL source as render_page() so server render and
+        // AJAX agree byte-for-byte (LP-06, D-02/D-09).
+        $data = self::landing_page_rows($range['from_utc'], $range['to_utc']);
 
         wp_send_json_success([
             'rows'   => self::render_rows($data),   // identical markup to the server render
