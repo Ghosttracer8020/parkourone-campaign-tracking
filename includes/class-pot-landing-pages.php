@@ -30,6 +30,187 @@ class POT_Landing_Pages {
     const MAX_PAGES  = 100;   // Sane cap; the ingest gate reads this small array per event.
     const LABEL_MAX  = 100;
 
+    public static function init() {
+        // Priority 999 so the shared `parkourone` parent (registered by POT_Admin at 999)
+        // exists when this submenu is added.
+        add_action('admin_menu', [__CLASS__, 'add_menu_page'], 999);
+        add_action('admin_post_pot_save_landing_pages', [__CLASS__, 'handle_save']);
+    }
+
+    public static function add_menu_page() {
+        // Sub-surface of the dashboard: only register when the parkourone parent exists
+        // (graceful no-op otherwise), mirroring POT_Api_Settings.
+        if (empty($GLOBALS['admin_page_hooks']['parkourone'])) {
+            return;
+        }
+        add_submenu_page(
+            'parkourone',
+            'Landingpages',
+            'Landingpages',
+            'manage_options',
+            self::PAGE_SLUG,
+            [__CLASS__, 'render_page']
+        );
+    }
+
+    public static function render_page() {
+        // Capability re-check before any output (T-06-02).
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        $entries = get_option(self::OPTION, []);
+        $entries = is_array($entries) ? $entries : [];
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html('Landingpages'); ?></h1>
+
+            <?php if (isset($_GET['pot_saved']) && $_GET['pot_saved'] === '1') : ?>
+                <div class="notice notice-success is-dismissible"><p>
+                    <?php echo esc_html('Landingpages gespeichert.'); ?>
+                </p></div>
+            <?php endif; ?>
+
+            <p class="description">
+                <?php echo esc_html('Nur hier registrierte Landingpages werden getrackt. Besuche/Klicks auf nicht gelistete Pfade werden serverseitig verworfen. Vollständige URL einfügen — gespeichert und verglichen wird der normalisierte Pfad (siehe Spalte rechts).'); ?>
+            </p>
+
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <input type="hidden" name="action" value="pot_save_landing_pages" />
+                <?php wp_nonce_field(self::NONCE_NAME); ?>
+
+                <table class="form-table" role="presentation">
+                    <thead>
+                        <tr>
+                            <th scope="col"><?php echo esc_html('URL oder Pfad'); ?></th>
+                            <th scope="col"><?php echo esc_html('Bezeichnung (optional)'); ?></th>
+                            <th scope="col"><?php echo esc_html('Normalisierter Schlüssel'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody id="pot-lp-rows">
+                        <?php foreach ($entries as $entry) :
+                            $key   = isset($entry['key']) ? (string) $entry['key'] : '';
+                            $label = isset($entry['label']) ? (string) $entry['label'] : '';
+                            ?>
+                            <tr class="pot-lp-row">
+                                <td>
+                                    <input type="text" class="regular-text code" name="pot_lp_url[]"
+                                           value="<?php echo esc_attr($key); ?>"
+                                           placeholder="https://berlin.parkourone.com/lp/…" />
+                                </td>
+                                <td>
+                                    <input type="text" class="regular-text" name="pot_lp_label[]"
+                                           value="<?php echo esc_attr($label); ?>"
+                                           maxlength="<?php echo esc_attr((string) self::LABEL_MAX); ?>" />
+                                </td>
+                                <td>
+                                    <code><?php echo esc_html($key); ?></code>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        <tr class="pot-lp-row">
+                            <td>
+                                <input type="text" class="regular-text code" name="pot_lp_url[]"
+                                       value="" placeholder="https://berlin.parkourone.com/lp/…" />
+                            </td>
+                            <td>
+                                <input type="text" class="regular-text" name="pot_lp_label[]"
+                                       value="" maxlength="<?php echo esc_attr((string) self::LABEL_MAX); ?>" />
+                            </td>
+                            <td>
+                                <span class="description"><?php echo esc_html('— neu —'); ?></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>
+                    <button type="button" class="button" id="pot-lp-add">
+                        <?php echo esc_html('Zeile hinzufügen'); ?>
+                    </button>
+                </p>
+
+                <p class="description">
+                    <?php echo esc_html('Eintrag entfernen: URL-Feld leeren und speichern — leere Zeilen werden verworfen.'); ?>
+                </p>
+
+                <?php submit_button('Speichern'); ?>
+            </form>
+        </div>
+        <?php
+        // OPTIONAL dependency-free progressive enhancement: clone the last row on click.
+        // No build step, no jQuery, no CDN — vanilla JS only. The server-rendered blank
+        // add-row already makes the page work without JS.
+        ?>
+        <script>
+        (function () {
+            var btn = document.getElementById('pot-lp-add');
+            var body = document.getElementById('pot-lp-rows');
+            if (!btn || !body) { return; }
+            btn.addEventListener('click', function () {
+                var rows = body.querySelectorAll('tr.pot-lp-row');
+                if (!rows.length) { return; }
+                var clone = rows[rows.length - 1].cloneNode(true);
+                clone.querySelectorAll('input').forEach(function (el) { el.value = ''; });
+                var key = clone.querySelector('code');
+                if (key) { key.textContent = ''; }
+                body.appendChild(clone);
+            });
+        })();
+        </script>
+        <?php
+    }
+
+    /**
+     * Persist the allowlist. CSRF + capability gated. NEVER persists raw $_POST — always a
+     * clean rebuilt list: normalize each URL → key (reject empties, D-04), sanitize + cap each
+     * label, first-wins dedupe by key (registered order stable, D-02/D-06), cap at MAX_PAGES,
+     * autoload=false (T-06-01/T-06-03).
+     */
+    public static function handle_save() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Unauthorized');
+        }
+        check_admin_referer(self::NONCE_NAME);
+
+        $urls   = isset($_POST['pot_lp_url'])   ? (array) wp_unslash($_POST['pot_lp_url'])   : [];
+        $labels = isset($_POST['pot_lp_label']) ? (array) wp_unslash($_POST['pot_lp_label']) : [];
+
+        $entries = []; // key => label (assoc dedupes by key automatically; first-wins).
+        foreach ($urls as $i => $raw) {
+            $key = self::normalize_path($raw);
+            if ($key === '') {
+                continue; // Invalid after normalize → reject (D-04). (Defensive — normalize_path always returns non-empty.)
+            }
+            $label = isset($labels[$i])
+                ? substr(sanitize_text_field((string) $labels[$i]), 0, self::LABEL_MAX)
+                : '';
+            if (!isset($entries[$key])) {
+                $entries[$key] = $label; // First-wins dedupe; preserves registered order (D-02/D-06).
+            }
+            if (count($entries) >= self::MAX_PAGES) {
+                break; // Cap entries (T-06-03 option-injection guard).
+            }
+        }
+
+        // Re-shape to an ordered list (preserve insertion order for D-02).
+        $list = [];
+        foreach ($entries as $key => $label) {
+            $list[] = ['key' => $key, 'label' => $label];
+        }
+
+        update_option(self::OPTION, $list, false); // autoload=false (Pitfall 11).
+
+        wp_safe_redirect(
+            add_query_arg(
+                'pot_saved',
+                '1',
+                wp_get_referer() ?: admin_url('admin.php?page=' . self::PAGE_SLUG)
+            )
+        );
+        exit;
+    }
+
     /**
      * Normalize a full URL or bare path to a canonical key.
      *
