@@ -117,6 +117,120 @@ class POT_Store {
     }
 
     /**
+     * Aggregate per-landing-page visit/click/booking counts within a date range, restricted
+     * to the registered allowlist keys (LP-05).
+     *
+     * Admitted visit/click rows store the canonical normalized key (D-07), so they are matched
+     * by a single prepared `WHERE landing_path IN (...)` GROUP BY that hits the new
+     * (landing_path,created_at) composite prefix index. The dynamic IN() is built SAFELY with
+     * array_fill('%s') placeholders + $wpdb->prepare — keys are NEVER concatenated into SQL
+     * (injection guard, T-06-07).
+     *
+     * Booking rows store landing_path UN-normalized (POT_Conversion is intentionally untouched,
+     * LP-04), so a raw IN() would under-count listed-page bookings whose stored path differs
+     * from the canonical key. Because booking rows are low-volume, they are fetched separately
+     * and bucketed by POT_Landing_Pages::normalize_path() in PHP at read time (R-2); a booking
+     * is added to a listed key's count only when its normalized key is in $keys. Bookings whose
+     * normalized key is NOT listed are excluded from this view entirely (LP-05).
+     *
+     * All SQL stays inside this gateway (no $wpdb in callers). Rows are NOT zero-filled here —
+     * the caller (Plan 03 dashboard) zero-fills in registered key order.
+     *
+     * @param array  $keys Normalized allowlist keys (registered order). Empty ⇒ no query.
+     * @param string $from Inclusive lower bound (DATETIME, UTC).
+     * @param string $to   Inclusive upper bound (DATETIME, UTC).
+     * @return array<int,array<string,mixed>> Rows: { landing_path, visits, clicks, bookings }.
+     */
+    public static function aggregate_by_landing_page(array $keys, $from, $to) {
+        global $wpdb;
+
+        // Empty allowlist ⇒ nothing tracked ⇒ no query (mirrors the ingest gate's empty case).
+        if (empty($keys)) {
+            return [];
+        }
+
+        $table = self::table();
+
+        // --- Visit/click portion: prepared IN() of the canonical keys (D-07). ---
+        $placeholders = implode(',', array_fill(0, count($keys), '%s'));
+        // Arg order MUST match placeholder order: the IN() keys first, then the date bounds.
+        $args = array_merge($keys, [$from, $to]);
+
+        $sql = $wpdb->prepare(
+            "SELECT
+                landing_path,
+                SUM(event_type = 'visit') AS visits,
+                SUM(event_type = 'click') AS clicks,
+                SUM(event_type = 'booking') AS bookings
+             FROM {$table}
+             WHERE landing_path IN ({$placeholders})
+               AND created_at BETWEEN %s AND %s
+             GROUP BY landing_path",
+            $args
+        );
+
+        $rows = $wpdb->get_results($sql, ARRAY_A);
+
+        if ($wpdb->last_error) {
+            error_log('[POT Tracking] aggregate_by_landing_page failed: ' . $wpdb->last_error);
+            return [];
+        }
+
+        // Index visit/click results by their (already canonical) landing_path key.
+        $by_key = [];
+        foreach (is_array($rows) ? $rows : [] as $row) {
+            $k          = (string) $row['landing_path'];
+            $by_key[$k] = [
+                'landing_path' => $k,
+                'visits'       => (int) $row['visits'],
+                'clicks'       => (int) $row['clicks'],
+                // Bookings recomputed from the normalized pass below; the IN() booking SUM is
+                // discarded because booking rows are stored un-normalized (R-2).
+                'bookings'     => 0,
+            ];
+        }
+
+        // --- Booking-match portion (R-2): normalize un-normalized booking paths at read time. ---
+        $booking_rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT landing_path
+                 FROM {$table}
+                 WHERE event_type = 'booking'
+                   AND created_at BETWEEN %s AND %s",
+                $from,
+                $to
+            ),
+            ARRAY_A
+        );
+
+        if ($wpdb->last_error) {
+            error_log('[POT Tracking] aggregate_by_landing_page failed: ' . $wpdb->last_error);
+            return [];
+        }
+
+        // Only listed keys count; non-listed-page bookings are excluded from the view (LP-05).
+        $listed = array_flip($keys);
+        foreach (is_array($booking_rows) ? $booking_rows : [] as $brow) {
+            $bkey = POT_Landing_Pages::normalize_path((string) $brow['landing_path']);
+            if (!isset($listed[$bkey])) {
+                continue; // Booking on a non-listed landing page — excluded.
+            }
+            if (!isset($by_key[$bkey])) {
+                // Listed key with bookings but no visit/click rows in range — still surface it.
+                $by_key[$bkey] = [
+                    'landing_path' => $bkey,
+                    'visits'       => 0,
+                    'clicks'       => 0,
+                    'bookings'     => 0,
+                ];
+            }
+            $by_key[$bkey]['bookings']++;
+        }
+
+        return array_values($by_key);
+    }
+
+    /**
      * Delete raw visit/click rows older than the cutoff. NEVER touches booking rows
      * (business record). Routed through this gateway so the cron never calls $wpdb.
      *
