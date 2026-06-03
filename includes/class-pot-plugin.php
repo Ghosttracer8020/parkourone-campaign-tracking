@@ -41,5 +41,8 @@ class POT_Plugin {
 
         // API secret settings page (view endpoint + masked secret, gated regenerate).
         POT_Api_Settings::init();
+
+        // Landing-page allowlist settings page + normalize_path() primitive (Phase 6).
+        POT_Landing_Pages::init();
     }
 }
