@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ParkourONE Campaign Tracking
  * Description: Zählt echte Probetraining-Buchungen je Kampagne/Landingpage und ordnet sie verlässlich zu. Eigener Events-Store, Conversion-Tracking, Dashboard und gesicherte Pull-API.
- * Version:     0.1.0
+ * Version:     0.2.0
  * Author:      Pierre Biege
  * Text Domain: parkourone-campaign-tracking
  * Requires PHP: 8.1
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants (defined immediately after the ABSPATH guard).
-define('POT_VERSION', '0.1.0');
+define('POT_VERSION', '0.2.0');
 define('POT_PLUGIN_FILE', __FILE__);
 define('POT_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('POT_PLUGIN_URL', plugin_dir_url(__FILE__));

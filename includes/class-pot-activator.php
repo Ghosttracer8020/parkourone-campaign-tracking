@@ -71,6 +71,7 @@ class POT_Activator {
   PRIMARY KEY  (id),
   KEY event_type_created (event_type,created_at),
   KEY campaign_created (campaign,created_at),
+  KEY landing_created (landing_path(191),created_at),
   KEY order_idx (order_id)
 ) {$charset_collate};";
 
