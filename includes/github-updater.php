@@ -39,6 +39,7 @@ class POT_GitHub_Updater {
         }
 
         add_action('admin_init', [$this, 'handle_manual_check']);
+        add_action('admin_init', [$this, 'handle_save_auto_update']);
         add_action('admin_notices', [$this, 'show_update_notice']);
     }
 
@@ -154,18 +155,30 @@ class POT_GitHub_Updater {
 
             <hr style="margin: 20px 0;">
 
-            <?php if ($has_token): ?>
             <form method="post" style="display: inline;">
                 <?php wp_nonce_field('pot_manual_update', 'pot_nonce'); ?>
                 <button type="submit" name="pot_check_update" class="button button-primary" style="margin-right: 10px;">
                     Jetzt prüfen & aktualisieren
                 </button>
             </form>
-            <?php endif; ?>
 
             <a href="https://github.com/<?php echo esc_attr($this->github_repo); ?>/commits/main" target="_blank" class="button">
                 GitHub Commits ansehen
             </a>
+
+            <form method="post" style="margin-top: 20px;">
+                <?php wp_nonce_field('pot_save_auto_update', 'pot_auto_nonce'); ?>
+                <label style="display: inline-flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" name="pot_auto_update" value="1" <?php checked(get_option('pot_auto_update', false)); ?> />
+                    <strong><?php echo esc_html('Automatische Updates aktivieren'); ?></strong>
+                </label>
+                <button type="submit" name="pot_save_auto_update" class="button" style="margin-left: 10px;">
+                    <?php echo esc_html('Speichern'); ?>
+                </button>
+                <p style="margin-top: 8px; color: #666; font-size: 13px;">
+                    <?php echo esc_html('AUS (Standard): Updates werden nur per Knopfdruck installiert. AN: stündlicher Auto-Check und automatische Installation neuer Versionen.'); ?>
+                </p>
+            </form>
 
             <p style="margin-top: 15px; color: #666; font-size: 13px;">
                 Repo: <code><?php echo esc_html($this->github_repo); ?></code> — Updates via Webhook bei jedem Push.
@@ -225,9 +238,36 @@ class POT_GitHub_Updater {
     }
 
     /**
+     * Speichert den Auto-Update-Schalter (Checkbox auf der API/Statusboard-Seite)
+     */
+    public function handle_save_auto_update() {
+        if (!isset($_POST['pot_save_auto_update'])) {
+            return;
+        }
+
+        if (!wp_verify_nonce($_POST['pot_auto_nonce'] ?? '', 'pot_save_auto_update')) {
+            return;
+        }
+
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
+        update_option('pot_auto_update', isset($_POST['pot_auto_update']) ? true : false, false);
+
+        wp_safe_redirect(wp_get_referer() ?: admin_url('admin.php?page=pot-api-settings'));
+        exit;
+    }
+
+    /**
      * Prüft und führt Auto-Update durch
      */
     public function maybe_auto_update() {
+        // Auto-Update ist opt-in (Default AUS) — ohne aktivierte Option kein stündlicher Check.
+        if (!get_option('pot_auto_update', false)) {
+            return;
+        }
+
         // Bei jedem Check alte Temp-Ordner aufräumen
         $this->cleanup_old_temp_dirs();
 
