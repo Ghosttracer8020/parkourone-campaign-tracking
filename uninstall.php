@@ -31,6 +31,6 @@ delete_option('pot_landing_pages');
 // Clear the scheduled retention cron.
 wp_clear_scheduled_hook('pot_prune_events');
 
-// Intentionally NOT deleted: 'parkourone_github_token' (shared across all monkeyspk plugins).
+// Intentionally NOT deleted: 'parkourone_github_token' (shared across all Ghosttracer8020 plugins).
 
 error_log('[POT Tracking] uninstall complete: table dropped, pot_* options deleted, cron cleared');
