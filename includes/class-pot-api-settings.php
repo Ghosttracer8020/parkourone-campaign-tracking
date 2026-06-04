@@ -118,6 +118,16 @@ class POT_Api_Settings {
                     </button>
                 </p>
             </form>
+
+            <?php
+            // GitHub-updater UI (version display + manual check/update button). Use the shared
+            // singleton — never `new` — so the constructor's admin_init/admin_notices hooks are
+            // not registered twice. class_exists guard keeps this page graceful if the updater
+            // require is ever absent. render_admin_section() echoes already-escaped output.
+            if (class_exists('POT_GitHub_Updater')) {
+                POT_GitHub_Updater::get_instance()->render_admin_section();
+            }
+            ?>
         </div>
         <?php
     }
