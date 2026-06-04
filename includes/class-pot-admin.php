@@ -522,6 +522,16 @@ class POT_Admin {
                     <?php echo $totals_html; // escaped in render_totals() ?>
                 </tfoot>
             </table>
+
+            <?php
+            // GitHub-updater UI (version display + manual check/update button). Use the shared
+            // singleton — never `new` — so the constructor's admin_init/admin_notices hooks are
+            // not registered twice. class_exists guard keeps the dashboard graceful if the
+            // updater require is ever absent. render_admin_section() echoes already-escaped output.
+            if (class_exists('POT_GitHub_Updater')) {
+                POT_GitHub_Updater::get_instance()->render_admin_section();
+            }
+            ?>
         </div>
         <?php
     }

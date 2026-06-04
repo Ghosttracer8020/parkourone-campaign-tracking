@@ -8,11 +8,26 @@ if (!defined('ABSPATH')) exit;
 
 class POT_GitHub_Updater {
 
+    /** Shared singleton instance — exactly one constructor run, one set of hooks. */
+    private static $instance = null;
+
     private $github_repo = 'Ghosttracer8020/parkourone-campaign-tracking';
     private $plugin_slug = 'parkourone-campaign-tracking';
     private $check_interval = 3600; // 1 Stunde in Sekunden
     private $transient_key = 'pot_github_update_check';
     private $last_error = null;
+
+    /**
+     * House-style singleton accessor (mirrors AB_Email_Customizer::get_instance()). The
+     * bootstrap line and the dashboard embed both call this, so admin_init/admin_notices
+     * hooks are registered once — never doubled.
+     */
+    public static function get_instance() {
+        if (null === self::$instance) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
 
     public function __construct() {
         if (!is_admin()) {
@@ -524,4 +539,4 @@ class POT_GitHub_Updater {
     }
 }
 
-new POT_GitHub_Updater();
+POT_GitHub_Updater::get_instance();
