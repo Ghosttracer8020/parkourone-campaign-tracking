@@ -21,26 +21,36 @@ class POT_Api_Settings {
     const NONCE_NAME = 'pot_regenerate_secret';
 
     public static function init() {
-        // Priority 999 so the shared `parkourone` parent (registered by POT_Admin at 999)
-        // exists when this submenu is added.
-        add_action('admin_menu', [__CLASS__, 'add_menu_page'], 999);
+        // Priority 1000 so POT_Admin (999) has already registered the fallback standalone
+        // parent (POT_Admin::MENU_SLUG) by the time we resolve our parent — the page is NEVER
+        // orphaned (falls back to the standalone Campaign-Tracking top menu).
+        add_action('admin_menu', [__CLASS__, 'add_menu_page'], 1000);
         add_action('admin_post_pot_regenerate_secret', [__CLASS__, 'handle_regenerate']);
     }
 
     public static function add_menu_page() {
-        // Sub-surface of the dashboard: only register when the parkourone parent exists
-        // (graceful no-op otherwise — it is not orphaned-page critical like the dashboard).
-        if (empty($GLOBALS['admin_page_hooks']['parkourone'])) {
-            return;
+        // Register under the shared `parkourone` parent if it exists; otherwise hang under the
+        // standalone Campaign-Tracking top menu POT_Admin created in its own fallback (999) —
+        // so the page is NEVER orphaned. Only the parent slug differs between the branches.
+        if (!empty($GLOBALS['admin_page_hooks']['parkourone'])) {
+            add_submenu_page(
+                'parkourone',
+                'API / Statusboard',
+                'API / Statusboard',
+                'manage_options',
+                self::PAGE_SLUG,
+                [__CLASS__, 'render_page']
+            );
+        } else {
+            add_submenu_page(
+                POT_Admin::MENU_SLUG,
+                'API / Statusboard',
+                'API / Statusboard',
+                'manage_options',
+                self::PAGE_SLUG,
+                [__CLASS__, 'render_page']
+            );
         }
-        add_submenu_page(
-            'parkourone',
-            'API / Statusboard',
-            'API / Statusboard',
-            'manage_options',
-            self::PAGE_SLUG,
-            [__CLASS__, 'render_page']
-        );
     }
 
     public static function render_page() {
