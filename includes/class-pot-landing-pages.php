@@ -173,7 +173,8 @@ class POT_Landing_Pages {
 
     /**
      * Persist the allowlist. CSRF + capability gated. NEVER persists raw $_POST — always a
-     * clean rebuilt list: normalize each URL → key (reject empties, D-04), sanitize + cap each
+     * clean rebuilt list: skip truly-empty raw rows before normalization (D-04), normalize each
+     * remaining URL → non-empty key, sanitize + cap each
      * label, first-wins dedupe by key (registered order stable, D-02/D-06), cap at MAX_PAGES,
      * autoload=false (T-06-01/T-06-03).
      */
@@ -188,9 +189,16 @@ class POT_Landing_Pages {
 
         $entries = []; // key => label (assoc dedupes by key automatically; first-wins).
         foreach ($urls as $i => $raw) {
+            // Drop truly-empty raw rows BEFORE normalize. normalize_path('') returns '/'
+            // (root is registrable), so an empty field must be skipped here — otherwise the
+            // always-present blank "neu" row, and any cleared field, would inject a '/' entry
+            // on every save. An explicit '/' is NOT empty (trim('/') === '/') and still passes.
+            if (trim((string) $raw) === '') {
+                continue;
+            }
             $key = self::normalize_path($raw);
             if ($key === '') {
-                continue; // Invalid after normalize → reject (D-04). (Defensive — normalize_path always returns non-empty.)
+                continue; // Unreachable in practice: empties are dropped above and normalize_path always returns a non-empty key. Left as a defensive belt.
             }
             $label = isset($labels[$i])
                 ? substr(sanitize_text_field((string) $labels[$i]), 0, self::LABEL_MAX)
