@@ -95,6 +95,7 @@ class POT_Landing_Pages {
                             <th scope="col"><?php echo esc_html('URL oder Pfad'); ?></th>
                             <th scope="col"><?php echo esc_html('Bezeichnung (optional)'); ?></th>
                             <th scope="col"><?php echo esc_html('Normalisierter Schlüssel'); ?></th>
+                            <th scope="col"><?php echo esc_html('Aktion'); ?></th>
                         </tr>
                     </thead>
                     <tbody id="pot-lp-rows">
@@ -116,6 +117,9 @@ class POT_Landing_Pages {
                                 <td>
                                     <code><?php echo esc_html($key); ?></code>
                                 </td>
+                                <td>
+                                    <button type="button" class="button pot-lp-remove"><?php echo esc_html('Entfernen'); ?></button>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                         <tr class="pot-lp-row">
@@ -130,6 +134,9 @@ class POT_Landing_Pages {
                             <td>
                                 <span class="description"><?php echo esc_html('— neu —'); ?></span>
                             </td>
+                            <td>
+                                <button type="button" class="button pot-lp-remove"><?php echo esc_html('Entfernen'); ?></button>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -141,30 +148,51 @@ class POT_Landing_Pages {
                 </p>
 
                 <p class="description">
-                    <?php echo esc_html('Eintrag entfernen: URL-Feld leeren und speichern — leere Zeilen werden verworfen.'); ?>
+                    <?php echo esc_html('Eintrag entfernen: auf „Entfernen“ klicken und anschließend speichern. Bearbeiten geht weiterhin direkt über die Felder.'); ?>
                 </p>
 
                 <?php submit_button('Speichern'); ?>
             </form>
         </div>
         <?php
-        // OPTIONAL dependency-free progressive enhancement: clone the last row on click.
+        // Dependency-free progressive enhancement: add cleared rows + per-row delete.
         // No build step, no jQuery, no CDN — vanilla JS only. The server-rendered blank
-        // add-row already makes the page work without JS.
+        // add-row + the (now bugfixed) save handler make the page work without JS too.
         ?>
         <script>
         (function () {
-            var btn = document.getElementById('pot-lp-add');
+            var btn  = document.getElementById('pot-lp-add');
             var body = document.getElementById('pot-lp-rows');
             if (!btn || !body) { return; }
+
+            // Capture a CLEAN template ONCE at init from the first row, then clear it.
+            // Storing the cleared template up front means "Zeile hinzufügen" keeps working
+            // even after the user has removed EVERY live row (no reliance on live DOM).
+            var seed = body.querySelector('tr.pot-lp-row');
+            var template = seed ? seed.cloneNode(true) : null;
+            if (template) {
+                template.querySelectorAll('input').forEach(function (el) { el.value = ''; });
+                var seedKey = template.querySelector('code');
+                if (seedKey) { seedKey.textContent = ''; }
+            }
+
             btn.addEventListener('click', function () {
-                var rows = body.querySelectorAll('tr.pot-lp-row');
-                if (!rows.length) { return; }
-                var clone = rows[rows.length - 1].cloneNode(true);
+                if (!template) { return; }
+                var clone = template.cloneNode(true);
+                // Re-clear on each append to be safe.
                 clone.querySelectorAll('input').forEach(function (el) { el.value = ''; });
                 var key = clone.querySelector('code');
                 if (key) { key.textContent = ''; }
                 body.appendChild(clone);
+            });
+
+            // Delegated remove: a DOM-removed row is absent from $_POST, so the next save
+            // rebuilds the allowlist without it — no server-side delete logic needed.
+            body.addEventListener('click', function (e) {
+                var hit = e.target.closest('.pot-lp-remove');
+                if (!hit) { return; }
+                var row = hit.closest('tr.pot-lp-row');
+                if (row) { row.remove(); }
             });
         })();
         </script>
