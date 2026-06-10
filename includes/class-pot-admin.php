@@ -267,14 +267,17 @@ class POT_Admin {
      * Reads the registered allowlist (pot_landing_pages, autoload=false), asks the gateway
      * for the listed-only aggregate, then PHP-zero-fills one row per registered page IN
      * REGISTERED ORDER (D-02) so every listed page shows a row even with zero activity
-     * (D-09). No `(unattributed)` bucket. NO SQL here — all aggregation stays in POT_Store.
+     * (D-09). NO SQL here — all aggregation stays in POT_Store.
      *
-     * Returns [] when no pages are registered (render_rows then shows the empty-allowlist
-     * state). Byte-identical source for render_page() and ajax_metrics().
+     * FIX-01 (revises LP-06): when the gateway reports unattributed bookings, one
+     * `(nicht zugeordnet)` row is appended AFTER all registered pages so no booking is
+     * ever invisible. With an empty allowlist the result may therefore be non-empty
+     * (the unattributed row alone). Byte-identical source for render_page() and
+     * ajax_metrics().
      *
      * @param string $from_utc UTC 'Y-m-d H:i:s' lower bound.
      * @param string $to_utc   UTC 'Y-m-d H:i:s' upper bound.
-     * @return array<int,array{key:string,label:string,visits:int,clicks:int,bookings:int}>
+     * @return array<int,array{key:string,label:string,visits:int,clicks:int,bookings:int,unattributed?:bool}>
      */
     private static function landing_page_rows($from_utc, $to_utc) {
         $entries = get_option('pot_landing_pages', []);
@@ -306,6 +309,21 @@ class POT_Admin {
             ];
         }
 
+        // FIX-01: append the unattributed booking bucket AFTER all registered pages
+        // (registered order stays D-02-compliant). The gateway only emits this row
+        // when unattributed bookings exist in the range.
+        if (isset($by_key[POT_Store::UNATTRIBUTED])) {
+            $hit    = $by_key[POT_Store::UNATTRIBUTED];
+            $data[] = [
+                'key'          => '',
+                'label'        => '(nicht zugeordnet)',
+                'visits'       => 0,
+                'clicks'       => 0,
+                'bookings'     => (int) ($hit['bookings'] ?? 0),
+                'unattributed' => true,
+            ];
+        }
+
         return $data;
     }
 
@@ -316,22 +334,33 @@ class POT_Admin {
      * path is shown. Every cell is escaped. Impossible-funnel cells (clicks>visits OR
      * bookings>clicks) carry a dashicons-warning marker; the row is never hidden.
      *
-     * An empty input means NO landing pages are registered (zero-fill always emits a row per
-     * listed page), so the empty branch renders the distinct empty-ALLOWLIST state — "register
-     * pages", NOT "no data in range".
+     * No REGISTERED rows means NO landing pages are registered (zero-fill always emits a row
+     * per listed page), so the empty-allowlist hint renders — "register pages", NOT "no data
+     * in range". An unattributed bucket row (FIX-01) does NOT count as registered: it renders
+     * BELOW the hint so bookings stay visible even with an empty allowlist.
      *
-     * @param array<int,array{key:string,label:string,visits:int,clicks:int,bookings:int}> $rows
+     * @param array<int,array{key:string,label:string,visits:int,clicks:int,bookings:int,unattributed?:bool}> $rows
      * @return string Escaped <tr>… markup.
      */
     private static function render_rows($rows) {
-        if (empty($rows)) {
+        // Empty-allowlist check counts only REGISTERED rows; the unattributed bucket
+        // row is data, not a registered entry (FIX-01).
+        $has_registered = false;
+        foreach ($rows as $row) {
+            if (!($row['unattributed'] ?? false)) {
+                $has_registered = true;
+                break;
+            }
+        }
+
+        $output = '';
+        if (!$has_registered) {
             // Distinct empty-allowlist state (LP-06): no pages registered, not "no data in range".
-            return '<tr><td colspan="' . self::COL_COUNT . '">'
+            $output .= '<tr><td colspan="' . self::COL_COUNT . '">'
                 . esc_html('Keine Landingpages registriert — bitte unter Einstellungen → Landingpages anlegen.')
                 . '</td></tr>';
         }
 
-        $output = '';
         foreach ($rows as $row) {
             $key      = isset($row['key']) ? (string) $row['key'] : '';
             $label    = isset($row['label']) ? (string) $row['label'] : '';
@@ -342,15 +371,22 @@ class POT_Admin {
             // Two-line label+path cell (D-01): escape EACH piece, then concatenate. The
             // assembled HTML is passed as %s WITHOUT re-escaping — re-escaping would render
             // the <br>/<span> as literal text (RESEARCH Anti-Pattern). Path-only when no label.
-            $first = ($label !== '')
-                ? esc_html($label) . '<br><span class="pot-lp-path description">' . esc_html($key) . '</span>'
-                : esc_html($key);
+            // Unattributed bucket row (FIX-01): static label only, italic-muted, no path span.
+            if ($row['unattributed'] ?? false) {
+                $first = '<em class="pot-unattributed">' . esc_html($label) . '</em>';
+            } else {
+                $first = ($label !== '')
+                    ? esc_html($label) . '<br><span class="pot-lp-path description">' . esc_html($key) . '</span>'
+                    : esc_html($key);
+            }
 
-            // Impossible-funnel markers (do NOT hide the row).
-            $visit_click_warn = ($clicks > $visits)
+            // Impossible-funnel markers (do NOT hide the row). Suppressed for the
+            // unattributed bucket: bookings > clicks is EXPECTED there (visits/clicks
+            // are structurally 0), not implausible.
+            $visit_click_warn = (!($row['unattributed'] ?? false) && $clicks > $visits)
                 ? self::warning_marker('Unplausibel: mehr Klicks als Visits')
                 : '';
-            $click_booking_warn = ($bookings > $clicks)
+            $click_booking_warn = (!($row['unattributed'] ?? false) && $bookings > $clicks)
                 ? self::warning_marker('Unplausibel: mehr Buchungen als Klicks')
                 : '';
 
@@ -381,6 +417,8 @@ class POT_Admin {
 
     /**
      * Build the totals/summary row from gateway rows (sum across all campaigns).
+     * Totals include the unattributed bucket (FIX-02) — the booking sum equals the
+     * full DB booking count for the range, never less.
      *
      * @param array<int,array<string,mixed>> $rows
      * @return string Escaped <tr>… markup.

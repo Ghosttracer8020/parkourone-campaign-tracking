@@ -40,6 +40,12 @@
     color: #646970;
 }
 
+/* Unattributed booking bucket row (FIX-01) — italic, house-muted tone (matches .description). */
+.pot-unattributed {
+    font-style: italic;
+    color: #646970;
+}
+
 /* Impossible-funnel marker (clicks>visits or bookings>clicks) — warning, never hidden. */
 .dashicons-warning.pot-warning {
     color: #d63638;
