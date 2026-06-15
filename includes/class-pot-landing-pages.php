@@ -122,6 +122,10 @@ class POT_Landing_Pages {
                                 </td>
                             </tr>
                         <?php endforeach; ?>
+                        <?php if (empty($entries)) : ?>
+                        <?php // Only on an empty allowlist: one No-JS bootstrap row so a fresh
+                              // install stays usable without JS. With entries present this ghost
+                              // row is dropped — the saved rows + "Zeile hinzufügen" suffice. ?>
                         <tr class="pot-lp-row">
                             <td>
                                 <input type="text" class="regular-text code" name="pot_lp_url[]"
@@ -138,6 +142,7 @@ class POT_Landing_Pages {
                                 <button type="button" class="button pot-lp-remove"><?php echo esc_html('Entfernen'); ?></button>
                             </td>
                         </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
 
@@ -156,8 +161,9 @@ class POT_Landing_Pages {
         </div>
         <?php
         // Dependency-free progressive enhancement: add cleared rows + per-row delete.
-        // No build step, no jQuery, no CDN — vanilla JS only. The server-rendered blank
-        // add-row + the (now bugfixed) save handler make the page work without JS too.
+        // No build step, no jQuery, no CDN — vanilla JS only. Without JS the page still
+        // works: on an empty allowlist the bootstrap blank row + the save handler let you
+        // register the first page; with entries present, editing the saved fields suffices.
         ?>
         <script>
         (function () {
@@ -166,8 +172,10 @@ class POT_Landing_Pages {
             if (!btn || !body) { return; }
 
             // Capture a CLEAN template ONCE at init from the first row, then clear it.
-            // Storing the cleared template up front means "Zeile hinzufügen" keeps working
-            // even after the user has removed EVERY live row (no reliance on live DOM).
+            // Source-agnostic: the first row is either a saved entry (values cleared below)
+            // or the empty-allowlist bootstrap row — so this does NOT depend on the removed
+            // always-present default row. Caching up front also means "Zeile hinzufügen"
+            // keeps working after the user has removed EVERY live row (no reliance on live DOM).
             var seed = body.querySelector('tr.pot-lp-row');
             var template = seed ? seed.cloneNode(true) : null;
             if (template) {
