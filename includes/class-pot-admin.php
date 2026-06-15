@@ -417,8 +417,11 @@ class POT_Admin {
 
     /**
      * Build the totals/summary row from gateway rows (sum across all campaigns).
-     * Totals include the unattributed bucket (FIX-02) — the booking sum equals the
-     * full DB booking count for the range, never less.
+     * Totals EXCLUDE the unattributed bucket (FIX-02) so the Gesamt conversion rate's
+     * numerator (bookings) and denominator (visits) share one scope — registered
+     * landing pages only. Consequence (deliberate trade-off): "Gesamt Buchungen" no
+     * longer equals the absolute DB booking count for the range; the unattributed
+     * bookings stay visible in their own "(nicht zugeordnet)" row (render_rows).
      *
      * @param array<int,array<string,mixed>> $rows
      * @return string Escaped <tr>… markup.
@@ -426,6 +429,11 @@ class POT_Admin {
     private static function render_totals($rows) {
         $visits = $clicks = $bookings = 0;
         foreach ($rows as $row) {
+            // Skip the unattributed bucket — it has no visits, so folding its
+            // bookings in would desync the Gesamt conversion-rate scopes.
+            if ($row['unattributed'] ?? false) {
+                continue;
+            }
             $visits   += isset($row['visits']) ? (int) $row['visits'] : 0;
             $clicks   += isset($row['clicks']) ? (int) $row['clicks'] : 0;
             $bookings += isset($row['bookings']) ? (int) $row['bookings'] : 0;
